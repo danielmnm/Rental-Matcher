@@ -1,0 +1,554 @@
+{
+  "$defs": {
+    "Area": {
+      "properties": {
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "neighborhood": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional: Facebook Marketplace and some Yad2 posts give only a street or a city, no named neighborhood. Required-by-default here would reject real, otherwise-usable listings.",
+          "title": "Neighborhood"
+        },
+        "street": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Street"
+        },
+        "house_number": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "House Number"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "required": [
+        "city"
+      ],
+      "title": "Area",
+      "type": "object"
+    },
+    "Availability": {
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/AvailabilityMode"
+        },
+        "on_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when mode == DATE, forbidden otherwise (enforced below) -- without that invariant, mode=DATE with on_date=None is a state that claims a specific date exists without saying what it is. Named on_date rather than `date` to avoid shadowing the `date` type within this class's own annotations.",
+          "title": "On Date"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "title": "Availability",
+      "type": "object"
+    },
+    "AvailabilityMode": {
+      "enum": [
+        "immediate",
+        "flexible",
+        "date"
+      ],
+      "title": "AvailabilityMode",
+      "type": "string"
+    },
+    "Contact": {
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Normalized to E.164 on input (e.g. both '054-123-4567' and '+972 54 123 4567' become '+972541234567') -- this is the primary anchor for cross-platform deduplication, so two representations of the same number must produce the exact same string, not just similar-looking ones. Currently assumes an Israeli local number when no country code is present (leading '0' -> '+972'), since that's the only market this tool operates in today; a non-Israeli number with no '+' is ambiguous and is returned digits-only rather than guessed.",
+          "title": "Phone"
+        }
+      },
+      "title": "Contact",
+      "type": "object"
+    },
+    "ExtractedBy": {
+      "enum": [
+        "rule",
+        "llm",
+        "manual"
+      ],
+      "title": "ExtractedBy",
+      "type": "string"
+    },
+    "Link": {
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "ListedBy": {
+      "description": "Whether the listing comes from the owner directly or an agency.\n\nUsually a structured fact the source platform states outright (Yad2\nmarks this explicitly); where it's only inferable from free text,\ntreat it as a `Signal` under `signals[\"listed_by\"]` instead of forcing\nit in here -- this field is for the cases we're confident about.",
+      "enum": [
+        "private",
+        "agency"
+      ],
+      "title": "ListedBy",
+      "type": "string"
+    },
+    "ListingStatus": {
+      "enum": [
+        "candidate",
+        "excluded",
+        "contacted",
+        "rejected",
+        "secured"
+      ],
+      "title": "ListingStatus",
+      "type": "string"
+    },
+    "Price": {
+      "properties": {
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "currency": {
+          "default": "ILS",
+          "maxLength": 3,
+          "minLength": 3,
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount"
+      ],
+      "title": "Price",
+      "type": "object"
+    },
+    "RecurringCosts": {
+      "description": "Secondary monthly costs on top of base rent. Omitted entirely\n(left as None on Listing) rather than zero-filled when unknown --\nzero would wrongly assert \"no arnona,\" which is never true in\npractice and would distort a true-monthly-cost calculation.",
+      "properties": {
+        "arnona_monthly": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arnona Monthly"
+        },
+        "vaad_bayit_monthly": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vaad Bayit Monthly"
+        }
+      },
+      "title": "RecurringCosts",
+      "type": "object"
+    },
+    "Signal": {
+      "description": "A tagged union representing one fact extracted from a listing's free\ntext (balcony mention, roommate-exclusion language, bike storage, ...).\n\n`status` is the tag. `value` is only meaningful when status is\nCONFIRMED or CONTRADICTED; it is intentionally optional so \"we don't\nknow yet\" (UNKNOWN) and \"we looked and it's ambiguous\" (UNCONFIRMED)\nare representable without inventing a fake value.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/SignalStatus",
+          "default": "unknown"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Short quote or excerpt supporting this signal's status.",
+          "title": "Evidence"
+        },
+        "extracted_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExtractedBy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        }
+      },
+      "title": "Signal",
+      "type": "object"
+    },
+    "SignalStatus": {
+      "description": "Confidence state for a fact extracted from free text.",
+      "enum": [
+        "confirmed",
+        "unconfirmed",
+        "contradicted",
+        "unknown"
+      ],
+      "title": "SignalStatus",
+      "type": "string"
+    },
+    "Source": {
+      "enum": [
+        "yad2",
+        "facebook",
+        "komo",
+        "madlan",
+        "the_finder",
+        "other"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "description": "The canonical record for one rental listing, from any source, in\nany city. Nothing in this model may refer to a specific user's\npreferences (no `balcony: bool` field, for instance) -- preference\nfacts live in `signals`, keyed by whatever preference a given user\ncares about.",
+  "properties": {
+    "schema_version": {
+      "default": "1.2",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "Stable id for THIS SOURCE POST, e.g. hash of source + source_listing_id. Deliberately distinct from apartment_id below -- this id must stay stable and unique per post even before any cross-platform matching has run.",
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "source_listing_id": {
+      "minLength": 1,
+      "title": "Source Listing Id",
+      "type": "string"
+    },
+    "apartment_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Cross-platform entity id for the physical apartment this post describes. Null until a deduplication step (Phase 2/3) resolves two posts -- e.g. the same unit cross-posted to Yad2 and Facebook -- to the same apartment_id, typically by matching normalized phone + address + price. Keeping this separate from `id` means dedup logic can improve later without ever renaming or merging the post-level record.",
+      "title": "Apartment Id"
+    },
+    "area": {
+      "$ref": "#/$defs/Area"
+    },
+    "price": {
+      "$ref": "#/$defs/Price"
+    },
+    "recurring_costs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RecurringCosts"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "rooms": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rooms"
+    },
+    "floor": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Floor"
+    },
+    "total_floors": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Floors"
+    },
+    "size_m2": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Size M2"
+    },
+    "listed_by": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ListedBy"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "contact": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Contact"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "availability": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Availability"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "posted_at": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Posted At"
+    },
+    "pulled_at": {
+      "format": "date-time",
+      "title": "Pulled At",
+      "type": "string"
+    },
+    "pull_round": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pull Round"
+    },
+    "raw_excerpt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "A short excerpt (1-2 sentences) around whatever text justified a signal -- never the full post or page. Keeping this short is a deliberate memory-budget decision, not an oversight. An over-length value is truncated (with a visible marker), not rejected -- see _truncate_raw_excerpt below for why.",
+      "title": "Raw Excerpt"
+    },
+    "links": {
+      "items": {
+        "$ref": "#/$defs/Link"
+      },
+      "title": "Links",
+      "type": "array"
+    },
+    "signals": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Signal"
+      },
+      "title": "Signals",
+      "type": "object"
+    },
+    "notes": {
+      "description": "Free-form human notes carried over from manual review.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "match_score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Match Score"
+    },
+    "status": {
+      "$ref": "#/$defs/ListingStatus",
+      "default": "candidate"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "source_listing_id",
+    "area",
+    "price",
+    "pulled_at"
+  ],
+  "title": "Listing",
+  "type": "object"
+}

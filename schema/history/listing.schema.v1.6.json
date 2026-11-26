@@ -1,0 +1,757 @@
+{
+  "$comment": "This model also enforces floor <= total_floors (see _floor_within_building below), but that invariant is NOT reflected anywhere else in this schema. Unlike Availability's mode/on_date invariant above, this one compares two sibling fields' VALUES to each other, not a field to a literal constant -- expressing that in standard JSON Schema would need a $data-style same-document reference, which draft 2020-12 (the draft this schema targets) does not include in its core spec. A consumer validating records in another language must re-implement this specific check itself; this comment exists so that requirement is visible in the schema artifact itself, not only in this file's Python source.",
+  "$defs": {
+    "Area": {
+      "properties": {
+        "city": {
+          "minLength": 1,
+          "title": "City",
+          "type": "string"
+        },
+        "neighborhood": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Optional: Facebook Marketplace and some Yad2 posts give only a street or a city, no named neighborhood. Required-by-default here would reject real, otherwise-usable listings. A fourth external review caught that 'optional' had been implemented as 'Optional[str]', not 'optional NonEmptyStr' -- so None correctly meant 'not known', but '' or ' ' also validated, silently meaning the same thing as None through a second, unintended spelling. That second spelling is what breaks dedup: street='' and street=None are the same real-world fact ('we don't have one') but are NOT the same string, so exact-match comparison treats them as different addresses. A fifth external review then caught the other side of that fix: plain NonEmptyStr REJECTS '' outright rather than coercing it, which is right for a required field but wrong here, since upstream JSON APIs routinely send '' for an empty optional field -- that's now handled by OptionalNonEmptyStr (see its definition above).",
+          "title": "Neighborhood"
+        },
+        "street": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Street"
+        },
+        "house_number": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "House Number"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "maximum": 90,
+              "minimum": -90,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "maximum": 180,
+              "minimum": -180,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "required": [
+        "city"
+      ],
+      "title": "Area",
+      "type": "object"
+    },
+    "Availability": {
+      "else": {
+        "properties": {
+          "on_date": {
+            "type": "null"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "date"
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "properties": {
+        "mode": {
+          "$ref": "#/$defs/AvailabilityMode"
+        },
+        "on_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Required when mode == DATE, forbidden otherwise (enforced below, and reflected in the exported JSON Schema via an if/then/else block -- see _availability_json_schema_extra) -- without that invariant, mode=DATE with on_date=None is a state that claims a specific date exists without saying what it is. Named on_date rather than `date` to avoid shadowing the `date` type within this class's own annotations.",
+          "title": "On Date"
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "then": {
+        "properties": {
+          "on_date": {
+            "format": "date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "on_date"
+        ]
+      },
+      "title": "Availability",
+      "type": "object"
+    },
+    "AvailabilityMode": {
+      "enum": [
+        "immediate",
+        "flexible",
+        "date"
+      ],
+      "title": "AvailabilityMode",
+      "type": "string"
+    },
+    "Contact": {
+      "properties": {
+        "name": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "phone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Normalized to E.164 on input (e.g. both '054-123-4567' and '+972 54 123 4567' become '+972541234567') -- this is the primary anchor for cross-platform deduplication, so two representations of the same number must produce the exact same string, not just similar-looking ones. Currently assumes an Israeli local number when no country code is present (leading '0' -> '+972'), since that's the only market this tool operates in today; a non-Israeli number with no '+' is ambiguous and is returned digits-only rather than guessed. A third external review caught that this used to skip length validation entirely, so a truncated/mistyped number like '054-123' silently produced a plausible-looking but invalid '+97254123' -- it now requires exactly 9 digits after the trunk '0' for a mobile number (05X-XXXXXXX) or 8 for a landline (0X-XXXXXXX), falling back to the 'ambiguous, don't guess' branch otherwise, same as a number with no leading 0. A fifth external review caught that this length check was only ever wired up for the bare-local and '+972 + redundant 0' shapes, leaving THREE other common real-world shapes unvalidated and un-converged: a truncated '+972' number with no redundant 0 ('+972-54-123'), a bare country code with no '+' at all ('972541234567', as WhatsApp links commonly give it), and the '00' international dialing prefix ('00972541234567'). All three now go through the same national-number extraction and 8/9-digit length check as the other two shapes, so all five spellings of the same number converge on one E.164 string.",
+          "title": "Phone"
+        }
+      },
+      "title": "Contact",
+      "type": "object"
+    },
+    "ExtractedBy": {
+      "enum": [
+        "rule",
+        "llm",
+        "manual"
+      ],
+      "title": "ExtractedBy",
+      "type": "string"
+    },
+    "Link": {
+      "properties": {
+        "label": {
+          "minLength": 1,
+          "title": "Label",
+          "type": "string"
+        },
+        "url": {
+          "description": "A real URI, not just any string -- a third external review caught that a plain `str` here both accepts garbage (empty string, a bare filename) and exports as an untyped JSON Schema string with no `format: \"uri\"` for another language's validator to check against. `AnyUrl` fixes both.",
+          "format": "uri",
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "ListedBy": {
+      "description": "Whether the listing comes from the owner directly or an agency.\n\nUsually a structured fact the source platform states outright (Yad2\nmarks this explicitly); where it's only inferable from free text,\ntreat it as a `Signal` under `signals[\"listed_by\"]` instead of forcing\nit in here -- this field is for the cases we're confident about.\n\nDeliberately NOT extended with SUBLET / LEASE_TRANSFER members, even\nthough a fourth external review correctly pointed out that a sublet\n(סאבלט) or a lease transfer (מחליף/ה) fits neither PRIVATE nor\nAGENCY cleanly. The review's diagnosis was right; its implied fix\n(add more values to this enum) would have been wrong, because\n\"who is listing it\" (private person vs. agency) and \"what kind of\ntenancy is being offered\" (a fresh lease vs. a sublet vs. a lease\ntransfer) are two independent facts, not one -- a sublet is\ntypically posted by a private individual, so it's PRIVATE *and* a\nsublet, not a third option that can't also be private. Collapsing\nthem into one field would make it impossible to represent that\ncombination at all. The right place for \"is this a sublet\" is\n`signals[\"sublet\"]` (or `signals[\"lease_transfer\"]`) -- which needs\nNO schema change, because `signals` was already designed in Phase 0\nto be an open map for exactly this kind of free-text-derived fact.\nNo detection rule is added for it yet, on the same \"verify against\nreal data before writing a rule\" standard as everything else in\nmigrate.py: the live 22-listing dataset has no sublet or\nlease-transfer example to check a rule against.",
+      "enum": [
+        "private",
+        "agency"
+      ],
+      "title": "ListedBy",
+      "type": "string"
+    },
+    "ListingStatus": {
+      "enum": [
+        "candidate",
+        "excluded",
+        "contacted",
+        "rejected",
+        "secured"
+      ],
+      "title": "ListingStatus",
+      "type": "string"
+    },
+    "Price": {
+      "properties": {
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "currency": {
+          "default": "ILS",
+          "enum": [
+            "AED",
+            "AFN",
+            "ALL",
+            "AMD",
+            "ANG",
+            "AOA",
+            "ARS",
+            "AUD",
+            "AWG",
+            "AZN",
+            "BAM",
+            "BBD",
+            "BDT",
+            "BGN",
+            "BHD",
+            "BIF",
+            "BMD",
+            "BND",
+            "BOB",
+            "BRL",
+            "BSD",
+            "BTN",
+            "BWP",
+            "BYN",
+            "BZD",
+            "CAD",
+            "CDF",
+            "CHF",
+            "CLP",
+            "CNY",
+            "COP",
+            "CRC",
+            "CUP",
+            "CVE",
+            "CZK",
+            "DJF",
+            "DKK",
+            "DOP",
+            "DZD",
+            "EGP",
+            "ERN",
+            "ETB",
+            "EUR",
+            "FJD",
+            "FKP",
+            "GBP",
+            "GEL",
+            "GHS",
+            "GIP",
+            "GMD",
+            "GNF",
+            "GTQ",
+            "GYD",
+            "HKD",
+            "HNL",
+            "HTG",
+            "HUF",
+            "IDR",
+            "ILS",
+            "INR",
+            "IQD",
+            "IRR",
+            "ISK",
+            "JMD",
+            "JOD",
+            "JPY",
+            "KES",
+            "KGS",
+            "KHR",
+            "KMF",
+            "KPW",
+            "KRW",
+            "KWD",
+            "KYD",
+            "KZT",
+            "LAK",
+            "LBP",
+            "LKR",
+            "LRD",
+            "LSL",
+            "LYD",
+            "MAD",
+            "MDL",
+            "MGA",
+            "MKD",
+            "MMK",
+            "MNT",
+            "MOP",
+            "MRU",
+            "MUR",
+            "MVR",
+            "MWK",
+            "MXN",
+            "MYR",
+            "MZN",
+            "NAD",
+            "NGN",
+            "NIO",
+            "NOK",
+            "NPR",
+            "NZD",
+            "OMR",
+            "PAB",
+            "PEN",
+            "PGK",
+            "PHP",
+            "PKR",
+            "PLN",
+            "PYG",
+            "QAR",
+            "RON",
+            "RSD",
+            "RUB",
+            "RWF",
+            "SAR",
+            "SBD",
+            "SCR",
+            "SDG",
+            "SEK",
+            "SGD",
+            "SHP",
+            "SLE",
+            "SOS",
+            "SRD",
+            "SSP",
+            "STN",
+            "SYP",
+            "SZL",
+            "THB",
+            "TJS",
+            "TMT",
+            "TND",
+            "TOP",
+            "TRY",
+            "TTD",
+            "TWD",
+            "TZS",
+            "UAH",
+            "UGX",
+            "USD",
+            "UYU",
+            "UZS",
+            "VES",
+            "VND",
+            "VUV",
+            "WST",
+            "XAF",
+            "XCD",
+            "XOF",
+            "XPF",
+            "YER",
+            "ZAR",
+            "ZMW",
+            "ZWL"
+          ],
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount"
+      ],
+      "title": "Price",
+      "type": "object"
+    },
+    "RecurringCosts": {
+      "description": "Secondary monthly costs on top of base rent. Omitted entirely\n(left as None on Listing) rather than zero-filled when unknown --\nzero would wrongly assert \"no arnona,\" which is never true in\npractice and would distort a true-monthly-cost calculation.",
+      "properties": {
+        "arnona_monthly": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Arnona Monthly"
+        },
+        "vaad_bayit_monthly": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vaad Bayit Monthly"
+        }
+      },
+      "title": "RecurringCosts",
+      "type": "object"
+    },
+    "Signal": {
+      "description": "A tagged union representing one fact extracted from a listing's free\ntext (balcony mention, roommate-exclusion language, bike storage, ...).\n\n`status` is the tag (see SignalStatus for what each one means).\n`value` is present exactly when status is CONFIRMED.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/SignalStatus",
+          "default": "unknown"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Short quote or excerpt supporting this signal's status.",
+          "title": "Evidence"
+        },
+        "extracted_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExtractedBy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        }
+      },
+      "title": "Signal",
+      "type": "object"
+    },
+    "SignalStatus": {
+      "description": "How confident we are in a fact extracted from a listing.\n\nThe status says how sure we are; `Signal.value` says what the fact\nIS. \"The listing says there's no balcony\" is CONFIRMED with\nvalue=False, not some separate negative status. Whether that's good\nor bad for a given renter is the scoring engine's call, never the\nsignal's -- the same listing is scored for many different users.\n\n- CONFIRMED: the listing clearly states the value. `value` required.\n- UNCONFIRMED: there's a hint, but not enough to commit to a value\n  (a \"suitable for roommates\" tag the description doesn't back up).\n- CONFLICTING: the listing contradicts itself (the features list\n  says balcony, the description says none). No single value.\n- UNKNOWN: nothing in the listing addresses it.\n\nOnly CONFIRMED carries a value; the validator on Signal enforces it.\nCONFLICTING replaced v1.5's CONTRADICTED, which the tests themselves\nused with two incompatible meanings (once with no value as \"the\nlisting says no\", once with value=False) -- see migrations.py.",
+      "enum": [
+        "confirmed",
+        "unconfirmed",
+        "conflicting",
+        "unknown"
+      ],
+      "title": "SignalStatus",
+      "type": "string"
+    },
+    "Source": {
+      "enum": [
+        "yad2",
+        "facebook",
+        "komo",
+        "madlan",
+        "the_finder",
+        "other"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "description": "The canonical record for one rental listing, from any source, in\nany city. Nothing in this model may refer to a specific user's\npreferences (no `balcony: bool` field, for instance) -- preference\nfacts live in `signals`, keyed by whatever preference a given user\ncares about.",
+  "properties": {
+    "schema_version": {
+      "default": "1.6",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "Stable id for THIS SOURCE POST, e.g. hash of source + source_listing_id. Deliberately distinct from apartment_id below -- this id must stay stable and unique per post even before any cross-platform matching has run.",
+      "minLength": 1,
+      "title": "Id",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "source_listing_id": {
+      "minLength": 1,
+      "title": "Source Listing Id",
+      "type": "string"
+    },
+    "apartment_id": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Cross-platform entity id for the physical apartment this post describes. Null until a deduplication step (Phase 2/3) resolves two posts -- e.g. the same unit cross-posted to Yad2 and Facebook -- to the same apartment_id, typically by matching normalized phone + address + price. Keeping this separate from `id` means dedup logic can improve later without ever renaming or merging the post-level record. A fifth external review noted this still allowed '' -- the same inconsistent-with-None gap fixed on Area's text fields in v1.4 -- now closed the same way, via OptionalNonEmptyStr.",
+      "title": "Apartment Id"
+    },
+    "area": {
+      "$ref": "#/$defs/Area"
+    },
+    "price": {
+      "$ref": "#/$defs/Price"
+    },
+    "recurring_costs": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RecurringCosts"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "rooms": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rooms"
+    },
+    "floor": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Floor"
+    },
+    "total_floors": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Total Floors"
+    },
+    "size_m2": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Size M2"
+    },
+    "listed_by": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ListedBy"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "contact": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Contact"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "availability": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Availability"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "posted_at": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Posted At"
+    },
+    "pulled_at": {
+      "format": "date-time",
+      "title": "Pulled At",
+      "type": "string"
+    },
+    "pull_round": {
+      "anyOf": [
+        {
+          "minLength": 1,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pull Round"
+    },
+    "raw_excerpt": {
+      "anyOf": [
+        {
+          "maxLength": 600,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "A short excerpt (1-2 sentences) around whatever text justified a signal -- never the full post or page. Keeping this short is a deliberate memory-budget decision, not an oversight. An over-length value is truncated (with a visible marker), not rejected -- see _truncate_raw_excerpt below for why. The `max_length` here is NOT redundant with that truncation, even though the truncation runs first and always brings the stored Python value within bounds before this constraint ever has anything to reject (confirmed directly: a mode='before' validator runs before Field-level constraints, not after). A fifth external review caught that an earlier version of this field had no `max_length` at all, which meant the EXPORTED JSON SCHEMA carried no bound either -- a Phase 6 consumer in another language, validating raw scraped text before it ever passes through this truncation logic, would see no limit at all. `max_length` restores that for the schema artifact, without changing this model's own behavior one bit.",
+      "title": "Raw Excerpt"
+    },
+    "links": {
+      "items": {
+        "$ref": "#/$defs/Link"
+      },
+      "title": "Links",
+      "type": "array"
+    },
+    "signals": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Signal"
+      },
+      "title": "Signals",
+      "type": "object"
+    },
+    "notes": {
+      "description": "Free-form human notes carried over from manual review.",
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "match_score": {
+      "anyOf": [
+        {
+          "maximum": 100,
+          "minimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Percentage scale (0-100), not a 0-1 fraction -- a third external review correctly noted this had no bounds at all before, which meant the scale itself was undefined (a -40 or a 4000 both validated). 0-100 is chosen now and stated explicitly here because Phase 1's scoring engine is the first code that will actually populate this field, and it needs a documented convention to target rather than inventing one.",
+      "title": "Match Score"
+    },
+    "status": {
+      "$ref": "#/$defs/ListingStatus",
+      "default": "candidate"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "source_listing_id",
+    "area",
+    "price",
+    "pulled_at"
+  ],
+  "title": "Listing",
+  "type": "object"
+}

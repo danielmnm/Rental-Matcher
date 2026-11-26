@@ -1,0 +1,339 @@
+{
+  "$defs": {
+    "Area": {
+      "properties": {
+        "city": {
+          "title": "City",
+          "type": "string"
+        },
+        "neighborhood": {
+          "title": "Neighborhood",
+          "type": "string"
+        },
+        "lat": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lat"
+        },
+        "lng": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lng"
+        }
+      },
+      "required": [
+        "city",
+        "neighborhood"
+      ],
+      "title": "Area",
+      "type": "object"
+    },
+    "ExtractedBy": {
+      "enum": [
+        "rule",
+        "llm",
+        "manual"
+      ],
+      "title": "ExtractedBy",
+      "type": "string"
+    },
+    "Link": {
+      "properties": {
+        "label": {
+          "title": "Label",
+          "type": "string"
+        },
+        "url": {
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "url"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "ListingStatus": {
+      "enum": [
+        "candidate",
+        "excluded",
+        "contacted",
+        "rejected",
+        "secured"
+      ],
+      "title": "ListingStatus",
+      "type": "string"
+    },
+    "Price": {
+      "properties": {
+        "amount": {
+          "title": "Amount",
+          "type": "number"
+        },
+        "currency": {
+          "default": "ILS",
+          "maxLength": 3,
+          "minLength": 3,
+          "title": "Currency",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount"
+      ],
+      "title": "Price",
+      "type": "object"
+    },
+    "Signal": {
+      "description": "A tagged union representing one fact extracted from a listing's free\ntext (balcony mention, roommate-exclusion language, bike storage, ...).\n\n`status` is the tag. `value` is only meaningful when status is\nCONFIRMED or CONTRADICTED; it is intentionally optional so \"we don't\nknow yet\" (UNKNOWN) and \"we looked and it's ambiguous\" (UNCONFIRMED)\nare representable without inventing a fake value.",
+      "properties": {
+        "status": {
+          "$ref": "#/$defs/SignalStatus",
+          "default": "unknown"
+        },
+        "value": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "evidence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Short quote or excerpt supporting this signal's status.",
+          "title": "Evidence"
+        },
+        "extracted_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExtractedBy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "checked_at": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checked At"
+        }
+      },
+      "title": "Signal",
+      "type": "object"
+    },
+    "SignalStatus": {
+      "description": "Confidence state for a fact extracted from free text.",
+      "enum": [
+        "confirmed",
+        "unconfirmed",
+        "contradicted",
+        "unknown"
+      ],
+      "title": "SignalStatus",
+      "type": "string"
+    },
+    "Source": {
+      "enum": [
+        "yad2",
+        "facebook",
+        "komo",
+        "madlan",
+        "the_finder",
+        "other"
+      ],
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "description": "The canonical record for one rental listing, from any source, in\nany city. Nothing in this model may refer to a specific user's\npreferences (no `balcony: bool` field, for instance) -- preference\nfacts live in `signals`, keyed by whatever preference a given user\ncares about.",
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "id": {
+      "description": "Stable id, e.g. hash of source + source_listing_id",
+      "title": "Id",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/Source"
+    },
+    "source_listing_id": {
+      "title": "Source Listing Id",
+      "type": "string"
+    },
+    "area": {
+      "$ref": "#/$defs/Area"
+    },
+    "price": {
+      "$ref": "#/$defs/Price"
+    },
+    "rooms": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rooms"
+    },
+    "floor": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Floor"
+    },
+    "size_m2": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Size M2"
+    },
+    "posted_at": {
+      "anyOf": [
+        {
+          "format": "date",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Posted At"
+    },
+    "pulled_at": {
+      "format": "date-time",
+      "title": "Pulled At",
+      "type": "string"
+    },
+    "pull_round": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Pull Round"
+    },
+    "raw_excerpt": {
+      "anyOf": [
+        {
+          "maxLength": 600,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "A short excerpt (1-2 sentences) around whatever text justified a signal -- never the full post or page. Keeping this short is a deliberate memory-budget decision, not an oversight.",
+      "title": "Raw Excerpt"
+    },
+    "links": {
+      "items": {
+        "$ref": "#/$defs/Link"
+      },
+      "title": "Links",
+      "type": "array"
+    },
+    "signals": {
+      "additionalProperties": {
+        "$ref": "#/$defs/Signal"
+      },
+      "title": "Signals",
+      "type": "object"
+    },
+    "notes": {
+      "description": "Free-form human notes carried over from manual review.",
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "match_score": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Match Score"
+    },
+    "status": {
+      "$ref": "#/$defs/ListingStatus",
+      "default": "candidate"
+    }
+  },
+  "required": [
+    "id",
+    "source",
+    "source_listing_id",
+    "area",
+    "price",
+    "pulled_at"
+  ],
+  "title": "Listing",
+  "type": "object"
+}

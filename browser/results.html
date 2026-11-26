@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rental Matcher</title>
+<link rel="icon" href="icons/icon32.png">
+<style id="cards-css"></style>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2125; background: #f6f7f9; }
+  header { position: sticky; top: 0; z-index: 2; background: #fff; border-bottom: 1px solid #e3e6ea; }
+  .top { max-width: 1280px; margin: 0 auto; padding: 14px 20px 0; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .top img { width: 26px; height: 26px; }
+  h1 { font-size: 18px; margin: 0; }
+  .sub { color: #6e7781; font-size: 13px; flex: 1; min-width: 200px; }
+  .btn { border: 1px solid #d0d7de; background: #fff; color: #1d2125; border-radius: 8px; padding: 7px 14px; font-size: 13px; cursor: pointer; font-family: inherit; }
+  .btn:hover { border-color: #b9c0c8; }
+  .btn.primary { background: #1f6feb; border-color: #1f6feb; color: #fff; font-weight: 600; }
+  .views { max-width: 1280px; margin: 0 auto; padding: 10px 20px 0; display: flex; gap: 4px; }
+  .view { border: 0; background: none; padding: 8px 14px; font: inherit; font-weight: 600; color: #6e7781; cursor: pointer; border-bottom: 3px solid transparent; }
+  .view.on { color: #1d2125; border-bottom-color: #1f6feb; }
+  .view small { display: block; font-weight: 400; font-size: 12px; color: #8a94a3; }
+  .btn.filt.on { border-color: #1f6feb; color: #0b4fc2; background: #eef4ff; font-weight: 600; }
+  .top .seg { margin-inline-start: auto; }
+  .bar { max-width: 1280px; margin: 0 auto; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .bar[hidden] { display: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+  .tab { border: 1px solid #e3e6ea; background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; color: #3d444d; font-family: inherit; }
+  .tab b { margin-inline-start: 6px; color: #6e7781; font-weight: 600; }
+  .tab.on { background: #1d2125; border-color: #1d2125; color: #fff; }
+  .tab.on b { color: #c9d1d9; }
+  select, input[type=search] { border: 1px solid #d0d7de; border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; background: #fff; }
+  main { max-width: 1280px; margin: 0 auto; padding: 16px 20px 40px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0 18px; align-items: start; }
+  .grid.detailed { grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); }
+  /* v1.31: shelves, quick filters, the view switches */
+  .seg { display: inline-flex; background: #eef1f5; border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: none; font: inherit; font-size: 13px; padding: 5px 12px; border-radius: 8px; cursor: pointer; color: #57606a; }
+  .seg button.on { background: #fff; color: #1d2125; font-weight: 600; box-shadow: 0 1px 3px rgba(16,24,40,.12); }
+  .chips { max-width: 1280px; margin: 0 auto; padding: 0 20px 12px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips[hidden] { display: none; }
+  .fchip { border: 1.5px solid #e3e6ea; background: #fff; border-radius: 999px; padding: 5px 12px; font-size: 13px; cursor: pointer; font-family: inherit; color: #3d444d;
+    transition: border-color .15s, background .15s; }
+  .fchip:hover { border-color: #b9c6d6; }
+  .fchip.on { border-color: #1f6feb; background: #eef4ff; color: #0b4fc2; font-weight: 600; }
+  .shelf { margin: 4px 0 22px; }
+  .shelf-h { display: flex; align-items: baseline; gap: 10px; }
+  .shelf-h h2 { font-size: 18px; margin: 0; }
+  .shelf-h .seeall { margin-inline-start: auto; border: 0; background: none; color: #1f6feb; font: inherit; font-weight: 600; cursor: pointer; }
+  .shelf-h .seeall:hover { text-decoration: underline; }
+  .shelf p { margin: 2px 0 10px; color: #6e7781; font-size: 13px; }
+  .shelf .row { display: grid; grid-auto-flow: column; grid-auto-columns: 280px; gap: 16px; overflow-x: auto; padding: 4px 2px 12px; scroll-snap-type: x proximity; align-items: start; }
+  .shelf .row.detailed { grid-auto-columns: 380px; }
+  .shelf .row > * { scroll-snap-align: start; }
+  .shelf .row .rm-card { margin: 0; }
+  .crumb { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; }
+  .empty { text-align: center; color: #6e7781; padding: 48px 12px; }
+  .gone { font-size: 12px; color: #6e7781; margin: -6px 4px 12px; }
+  .panelbox { background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; }
+  .panelbox[hidden] { display: none; }
+  .panelbox h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: #6e7781; margin: 0 0 8px; }
+  .panelbox ul { margin: 0; padding-inline-start: 18px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat { background: #fff; border: 1px solid #e3e6ea; border-radius: 12px; padding: 14px 16px; }
+  .stat b { display: block; font-size: 24px; line-height: 1.2; }
+  .stat span { color: #6e7781; font-size: 13px; }
+  .stat small { display: block; color: #6e7781; font-size: 12px; margin-top: 4px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: start; padding: 6px 8px; border-bottom: 1px solid #eef0f2; }
+  th { color: #6e7781; font-weight: 600; }
+  .muted { color: #6e7781; }
+  bdi { unicode-bidi: isolate; }
+  [hidden] { display: none !important; }
+  /* v1.41: send listings */
+  dialog#sharebox { border: 1px solid #e3e6ea; border-radius: 14px; padding: 18px 20px; max-width: 460px; width: calc(100% - 32px); }
+  dialog#sharebox::backdrop { background: rgba(16,24,40,.35); }
+  #sharebox h2 { margin: 0 0 4px; font-size: 17px; }
+  #sharebox label.c { display: flex; gap: 8px; align-items: center; padding: 6px 0; }
+  #sharebox label.c b { margin-inline-start: auto; color: #6e7781; font-weight: 500; }
+  #sharebox input[type=text] { width: 100%; padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 8px; font: inherit; margin: 6px 0 4px; }
+  #sharebox .acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  #sharebox .done { color: #1a7f37; min-height: 1.5em; margin-top: 8px; }
+  /* v1.40: the finder, what each search covered, listings not opened */
+  .fdrow { display: flex; gap: 8px; margin: 8px 0; }
+  .fdrow input { flex: 1; padding: 8px 10px; border: 1px solid #d0d7de; border-radius: 8px; font: inherit; }
+  .fdout p { margin: 4px 0; }
+  .fdout .err, td.warn { color: #b42318; }
+  .notopened details { margin: 6px 0; }
+  .notopened summary { cursor: pointer; font-weight: 600; }
+  .notopened table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 6px; }
+  .notopened td { padding: 5px 6px; border-bottom: 1px solid #eef0f2; vertical-align: top; }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <img src="icons/icon48.png" alt="">
+    <h1 data-i18n="rs_title">Your listings</h1>
+    <span class="sub" id="sub"></span>
+    <div class="seg" id="detail" data-i18n-title="view_label"><button data-d="0" data-i18n="view_simple">Simple</button><button data-d="1" data-i18n="view_detailed">Detailed</button></div>
+    <button class="btn" id="tune" data-i18n="cp_tune">⚖ Tune the ranking</button>
+    <button class="btn" id="find" data-i18n="fd_btn">🔎 Missing a listing?</button>
+    <button class="btn" id="share" data-i18n="sx_btn">📤 Share listings</button>
+    <button class="btn" id="lang"></button>
+    <button class="btn" id="setup">⚙ <span data-i18n="setup">Setup</span></button>
+    <button class="btn primary" id="pull" data-i18n="pull">Find listings</button>
+  </div>
+  <div class="views" id="views">
+    <button class="view on" id="v-picks" data-v="picks"></button>
+    <button class="view" id="v-every" data-v="every"></button>
+    <button class="view" id="v-stats" data-v="stats"></button>
+  </div>
+  <div class="bar" id="bar">
+    <div class="tabs" id="tabs"></div>
+    <input type="search" id="q" data-i18n-ph="rs_filter">
+    <button class="btn filt" id="filt"></button>
+    <select id="sort"></select>
+  </div>
+  <div class="chips" id="chips" hidden></div>
+</header>
+<main>
+  <section id="listings">
+    <div id="more"></div>
+    <div class="panelbox" id="viewings" hidden></div>
+    <div id="list"></div>
+  </section>
+  <section id="stats" hidden></section>
+</main>
+<dialog id="sharebox"></dialog>
+<script src="store.js"></script>
+<script src="i18n.js"></script>
+<script src="cards.js"></script>
+<script src="runner.js"></script>
+<script src="share.js"></script>
+<script src="results.js"></script>
+</body>
+</html>

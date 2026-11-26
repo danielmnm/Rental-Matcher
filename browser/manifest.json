@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "Rental Matcher",
+  "version": "1.68",
+  "description": "Reads Yad2 and Komo, plus Madlan pages and Facebook posts you choose, at a polite pace, and ranks rentals by your preferences. All on your computer.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqrHns9IhBGN1Oyc9xpc41VP4ntkwwa2bbyu66dEUxH0R90HefLoZJZOGBtPUiyQ/us7tmWqmOI/cABdef4KkTbrvHSP7CojVVXtlMvE3RN6H5FFzVbt0s/KRE5lWG/ay4X6uqfu/izeWL5/8UF18uFYZz19EmX2HYGC7c7Pl385J+uP/ZAU+X22c0cshG3EcOqDNLlyL9SDPmlrqovNIHjB8R5RgUMl035NF3bIfmH7tlR60D2m2HZt1zcehvpUcSKr0204zgAzH7A26Yq0ioMqv4Vw/Onr4J1rCzBAOvdcZae+X4heXojC7i2OeZNsym5dp7C9/vUUp4vVZo+lzTQIDAQAB",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_title": "Rental Matcher",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "permissions": [
+    "sidePanel",
+    "activeTab",
+    "scripting",
+    "nativeMessaging",
+    "storage",
+    "notifications",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "https://www.yad2.co.il/*",
+    "https://www.yad-il.co.il/*",
+    "https://gw.yad2.co.il/*",
+    "https://validate.perfdrive.com/*",
+    "https://www.komo.co.il/*",
+    "https://img.yad2.co.il/*",
+    "https://images2.madlan.co.il/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.yad2.co.il/*"
+      ],
+      "js": [
+        "yad2_pull.js",
+        "sites.js",
+        "runner.js",
+        "store.js",
+        "i18n.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.komo.co.il/code/nadlan/*",
+        "https://www.madlan.co.il/for-rent/*",
+        "https://www.madlan.co.il/listings/*"
+      ],
+      "js": [
+        "sites.js",
+        "i18n.js",
+        "content_sites.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_page": "options.html"
+}

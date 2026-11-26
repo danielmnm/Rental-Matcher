@@ -1,0 +1,17 @@
+{
+  "format_version": 2,
+  "owner": "example",
+  "note": "An example settings file. Copy it to preferences/my.json (or let the extension's setup create one) and change the values. Relevance 10 = dealbreaker (past the limit: hidden); 1-9 = soft (past the limit: shown, flagged, scored lower).",
+  "preferences": [
+    {"name": "price", "label": "Monthly rent (ILS)", "field": "price", "kind": "ranged", "relevance": 8, "ideal": 4500, "limit": 6000, "weight": 8, "tolerance": 1, "tolerance_note": "over budget, negotiable"},
+    {"name": "rooms", "label": "Rooms", "field": "rooms", "kind": "at_least", "relevance": 10, "limit": 2},
+    {"name": "size", "label": "Size (m²)", "field": "size_m2", "kind": "ranged", "relevance": 6, "limit": 45, "ideal": 65, "weight": 5},
+    {"name": "work_minutes", "label": "Travel time to work (min)", "field": "signal:commute_1_minutes", "kind": "ranged", "relevance": 7, "limit": 40, "ideal": 20, "weight": 6}
+  ],
+  "commutes": [
+    {"signal": "commute_1_minutes", "label": "Work (example: Dizengoff Center)", "lat": 32.0754, "lng": 34.7749, "mode": "car"}
+  ],
+  "searches": [
+    {"source": "yad2", "label": "Tel Aviv", "label_he": "תל אביב", "path": "/realestate/rent?city=5000"}
+  ]
+}

@@ -1,0 +1,76 @@
+{
+ "_about": "Odds for a fact a listing leaves unstated (box not ticked, text silent), measured on 233 hand-labeled Yad2 listings (Oct 18-20, 2026) as what the text says when the box isn't ticked, +1 per outcome. Written by `python -m rental_matcher.priors`; a test checks it matches a fresh measurement.",
+ "listings": 233,
+ "signals": {
+  "elevator": {
+   "dist": {
+    "false": 0.9545,
+    "true": 0.0455
+   },
+   "n": 20,
+   "counts": {
+    "false": 20,
+    "true": 0
+   }
+  },
+  "balcony": {
+   "dist": {
+    "false": 0.5625,
+    "true": 0.4375
+   },
+   "n": 14,
+   "counts": {
+    "false": 8,
+    "true": 6
+   }
+  },
+  "protected_space": {
+   "dist": {
+    "false": 0.2,
+    "true": 0.8
+   },
+   "n": 3,
+   "counts": {
+    "false": 0,
+    "true": 3
+   }
+  },
+  "air_conditioning": {
+   "dist": {
+    "false": 0.3333,
+    "true": 0.6667
+   },
+   "n": 1,
+   "counts": {
+    "false": 0,
+    "true": 1
+   }
+  },
+  "parking_level": {
+   "dist": {
+    "0.0": 0.1034,
+    "1.0": 0.4828,
+    "2.0": 0.3793,
+    "3.0": 0.0345
+   },
+   "n": 25,
+   "counts": {
+    "0.0": 2,
+    "1.0": 13,
+    "2.0": 10,
+    "3.0": 0
+   }
+  },
+  "roommate_listing": {
+   "dist": {
+    "false": 0.9867,
+    "true": 0.0133
+   },
+   "n": 224,
+   "counts": {
+    "false": 222,
+    "true": 2
+   }
+  }
+ }
+}

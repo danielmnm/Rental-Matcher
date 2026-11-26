@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rental Matcher</title>
+<link rel="icon" href="icons/icon32.png">
+<style>
+  :root { color-scheme: light; --ink:#1d2125; --soft:#5d6875; --line:#e3e6ea; --acc:#1f6feb; --acc2:#0b4fc2; --must:#d92d20; --nice:#1f6feb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink);
+    background: radial-gradient(1200px 600px at 10% -10%, #e8f0ff 0, transparent 60%), radial-gradient(900px 500px at 110% 110%, #fff1e6 0, transparent 55%), #f7f8fb; }
+  .top { max-width: 760px; margin: 0 auto; padding: 18px 20px 0; display: flex; align-items: center; gap: 10px; }
+  .top img { width: 28px; height: 28px; }
+  .top b { flex: 1; font-size: 17px; }
+  .linkbtn { border: 0; background: none; color: var(--soft); font: inherit; font-size: 14px; cursor: pointer; padding: 6px 8px; border-radius: 8px; }
+  .linkbtn:hover { background: #eef1f4; color: var(--ink); }
+  main { max-width: 760px; margin: 0 auto; padding: 18px 20px 60px; }
+  .dots { display: flex; gap: 6px; justify-content: center; margin: 4px 0 18px; }
+  .dots i { width: 28px; height: 6px; border-radius: 999px; background: #d7dce2; transition: background .3s; }
+  .dots i.on { background: var(--acc); }
+  .card { background: #fff; border-radius: 22px; padding: 30px 32px 24px; box-shadow: 0 10px 40px rgba(16,24,40,.08); animation: in .35s ease; }
+  @keyframes in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  h1 { font-size: 28px; line-height: 1.2; margin: 0 0 8px; }
+  h2 { font-size: 24px; line-height: 1.25; margin: 0 0 6px; }
+  .lead { color: var(--soft); margin: 0 0 22px; }
+  .hero { font-size: 54px; line-height: 1; margin-bottom: 14px; }
+  .nav { display: flex; gap: 10px; align-items: center; margin-top: 26px; }
+  .nav .sp { flex: 1; }
+  .btn { border: 1px solid #d0d7de; background: #fff; color: var(--ink); border-radius: 12px; padding: 11px 20px; font: inherit; cursor: pointer;
+    transition: transform .08s, box-shadow .15s, background .15s; }
+  .btn:hover { box-shadow: 0 2px 8px rgba(16,24,40,.1); }
+  .btn:active { transform: scale(.97); }
+  .btn.primary { background: linear-gradient(180deg, #3b82f6, var(--acc)); border-color: var(--acc); color: #fff; font-weight: 600; box-shadow: 0 4px 14px rgba(31,111,235,.3); }
+  .btn.primary:hover { box-shadow: 0 6px 18px rgba(31,111,235,.4); }
+  .btn.primary:disabled { opacity: .5; cursor: default; box-shadow: none; }
+  input, select { font: inherit; border: 1.5px solid #d0d7de; border-radius: 12px; padding: 11px 14px; background: #fff; }
+  input:focus, select:focus { outline: none; border-color: var(--acc); box-shadow: 0 0 0 3px rgba(31,111,235,.15); }
+  .wide { width: 100%; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 0; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; background: #eef4ff; color: var(--acc2); border-radius: 999px; padding: 6px 8px 6px 14px; font-weight: 500; }
+  [dir=rtl] .chip { padding: 6px 14px 6px 8px; }
+  .chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 18px; line-height: 1; padding: 0 4px; }
+  .hint { color: var(--soft); font-size: 14px; margin-top: 10px; }
+  .msg { min-height: 22px; font-size: 14px; color: #9a6700; margin-top: 8px; }
+  .msg.ok { color: #1a7f37; }
+  /* big choice tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .tiles.small { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
+  .tile { position: relative; border: 2px solid var(--line); background: #fff; border-radius: 16px; padding: 16px 12px; text-align: center; cursor: pointer; font: inherit;
+    transition: transform .1s, border-color .15s, box-shadow .15s, background .15s; }
+  .tile:hover { border-color: #b9c6d6; box-shadow: 0 4px 14px rgba(16,24,40,.08); }
+  .tile:active { transform: scale(.97); }
+  .tile .ic { font-size: 30px; display: block; line-height: 1.2; }
+  .tile .nm { display: block; margin-top: 6px; font-weight: 600; font-size: 15px; }
+  .tile .st { display: block; margin-top: 4px; font-size: 12px; min-height: 18px; color: var(--soft); }
+  .tile.on { border-color: var(--acc); background: #f0f6ff; box-shadow: 0 4px 14px rgba(31,111,235,.15); }
+  .tile.must { border-color: var(--must); background: #fff4f2; }
+  .tile.must .st { color: var(--must); font-weight: 600; }
+  .tile.nice { border-color: var(--nice); background: #f0f6ff; }
+  .tile.nice .st { color: var(--nice); font-weight: 600; }
+  .legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--soft); margin: -8px 0 16px; }
+  .legend b.m { color: var(--must); }
+  .legend b.n { color: var(--nice); }
+  /* budget */
+  .money { font-size: 34px; font-weight: 700; text-align: center; margin: 4px 0 18px; letter-spacing: -.5px; }
+  .money small { font-size: 15px; color: var(--soft); font-weight: 400; }
+  .dual { position: relative; height: 34px; margin: 0 6px; }
+  .dual .track, .dual .fill { position: absolute; top: 14px; height: 6px; border-radius: 999px; }
+  .dual .track { inset-inline: 0; background: #e3e6ea; }
+  .dual .fill { background: var(--acc); }
+  .dual input { position: absolute; inset-inline: 0; top: 4px; width: 100%; -webkit-appearance: none; appearance: none; background: none; pointer-events: none; border: 0; padding: 0; height: 26px; box-shadow: none; }
+  .dual input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: auto; width: 26px; height: 26px; border-radius: 50%; background: #fff; border: 3px solid var(--acc);
+    box-shadow: 0 2px 6px rgba(16,24,40,.25); cursor: grab; }
+  .ends { display: flex; justify-content: space-between; color: var(--soft); font-size: 13px; margin-top: 2px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .row .wide { flex: 1; width: auto; min-width: 220px; }
+  .picks { display: grid; gap: 6px; margin-top: 10px; }
+  .pick { text-align: start; border: 1.5px solid var(--line); background: #fafbfc; border-radius: 12px; padding: 10px 14px; cursor: pointer; font: inherit; }
+  .pick:hover { border-color: var(--acc); }
+  .label { font-weight: 600; margin: 18px 0 8px; display: block; }
+  .summary { display: grid; gap: 10px; margin: 6px 0 4px; }
+  .summary div { display: flex; gap: 12px; align-items: baseline; padding: 10px 14px; border-radius: 12px; background: #f6f8fb; }
+  .summary b { min-width: 120px; }
+  bdi { unicode-bidi: isolate; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="top"><img src="icons/icon48.png" alt=""><b>Rental Matcher</b>
+  <button class="linkbtn" id="lang"></button>
+  <button class="linkbtn" id="skip" data-i18n="wz_skip">Skip, I'll set it up myself</button></div>
+<main>
+  <div class="dots" id="dots"></div>
+  <div id="step"></div>
+</main>
+<datalist id="cities"></datalist>
+<script src="i18n.js"></script>
+<script src="setup_lib.js"></script>
+<script src="wizard.js"></script>
+</body>
+</html>

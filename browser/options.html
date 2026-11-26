@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rental Matcher</title>
+<link rel="icon" href="icons/icon32.png">
+<style>
+  :root { color-scheme: light; --line:#e3e6ea; --soft:#6e7781; --acc:#1f6feb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #1d2125; background: #f6f7f9; }
+  header { background: #fff; border-bottom: 1px solid var(--line); }
+  .top { max-width: 920px; margin: 0 auto; padding: 16px 20px; display: flex; align-items: center; gap: 12px; }
+  .top img { width: 28px; height: 28px; }
+  h1 { font-size: 19px; margin: 0; flex: 1; }
+  main { max-width: 920px; margin: 0 auto; padding: 20px 20px 140px; }
+  section { background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; margin-bottom: 18px; transition: box-shadow .2s; }
+  section.focus { box-shadow: 0 0 0 3px #1f6feb; }
+  section > h2 { font-size: 16px; margin: 0 0 2px; }
+  section > p.lead { margin: 0 0 14px; color: var(--soft); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  #searches { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  #searches { align-items: start; }
+  .place { border: 1px solid #c9dbff; background: #f5f8ff; border-radius: 12px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .place-h { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .place-h b { flex: 1 1 100%; font-size: 15px; }
+  .place .small { margin-top: 0; order: 1; }
+  .place-h .btn { order: 2; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #c9dbff; background: #eef4ff; color: #0b4fc2; border-radius: 999px; padding: 4px 6px 4px 12px; }
+  [dir=rtl] .chip { padding: 4px 12px 4px 6px; }
+  .chip button { border: 0; background: none; color: inherit; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 4px; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select { font: inherit; border: 1px solid #d0d7de; border-radius: 8px; padding: 7px 10px; background: #fff; }
+  input[type=number] { width: 120px; }
+  input.wide { flex: 1; min-width: 220px; }
+  .btn { border: 1px solid #d0d7de; background: #fff; color: #1d2125; border-radius: 8px; padding: 7px 14px; font: inherit; cursor: pointer; }
+  .btn:hover { border-color: #b9c0c8; }
+  .btn.primary { background: var(--acc); border-color: var(--acc); color: #fff; font-weight: 600; }
+  .btn.danger { color: #b42318; }
+  .btn.small { padding: 3px 10px; font-size: 13px; }
+  .item { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .item-h { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .item-h b { flex: 1; }
+  .fields { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; }
+  label.f { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--soft); }
+  label.f span { white-space: nowrap; }
+  label.c { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; }
+  /* v1.30: must-have is a switch; importance is a full-width 1-10 scale in words */
+  .imp { display: grid; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .must { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 14px; width: fit-content; }
+  .must input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .must .sw { width: 40px; height: 22px; border-radius: 999px; background: #d0d7de; position: relative; transition: background .2s; flex: none; }
+  .must .sw::after { content: ""; position: absolute; top: 3px; inset-inline-start: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: inset-inline-start .2s; }
+  .must.on .sw { background: #d92d20; }
+  .must.on .sw::after { inset-inline-start: 21px; }
+  .must.on { color: #b42318; font-weight: 600; }
+  .must input:focus-visible + .sw { outline: 2px solid var(--acc); outline-offset: 2px; }
+  .imp-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; }
+  .imp-row[hidden] { display: none; }
+  .imp-t { font-size: 13px; color: var(--soft); }
+  .imp-scale { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .imp-scale small { color: var(--soft); font-size: 12px; white-space: nowrap; }
+  .imp-row .val { font-size: 13px; white-space: nowrap; min-width: 150px; text-align: end; }
+  input[type=range] { -webkit-appearance: none; appearance: none; flex: 1; min-width: 120px; height: 6px; border-radius: 999px; border: 0; padding: 0;
+    background: linear-gradient(to var(--to, right), var(--acc) 0 var(--fill, 50%), #e3e6ea var(--fill, 50%) 100%); cursor: pointer; }
+  [dir=rtl] input[type=range] { --to: left; }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #fff;
+    border: 2px solid var(--acc); box-shadow: 0 1px 3px rgba(16,24,40,.2); transition: transform .1s; }
+  input[type=range]:active::-webkit-slider-thumb { transform: scale(1.15); }
+  /* the budget's two-handle range */
+  .dual { position: relative; height: 28px; margin: 6px 0 4px; }
+  .dual .track, .dual .fill { position: absolute; top: 11px; height: 6px; border-radius: 999px; }
+  .dual .track { inset-inline: 0; background: #e3e6ea; }
+  .dual .fill { background: var(--acc); }
+  .dual input[type=range] { position: absolute; inset-inline: 0; top: 4px; width: 100%; background: none; pointer-events: none; height: 20px; }
+  .dual input[type=range]::-webkit-slider-thumb { pointer-events: auto; cursor: grab; }
+  .money { display: flex; align-items: center; border: 1px solid #d0d7de; border-radius: 8px; background: #fff; padding-inline-start: 10px; }
+  .money i { font-style: normal; color: var(--soft); }
+  .money input { border: 0; width: 110px; }
+  label.inline { display: inline-flex; align-items: center; gap: 8px; margin: 12px 0 4px; font-size: 14px; }
+  label.inline input { width: 110px; }
+  .rent .row { margin-top: 8px; }
+  .worth { margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #f8fafc; border: 1px solid var(--line); }
+  .worth p { margin: 2px 0 8px; }
+  .worth-row { margin-bottom: 6px; }
+  .worth-row input { width: 100px; }
+  .effect { margin: 10px 0 0; padding: 8px 12px; border-radius: 8px; background: #f3f7ff; color: #24405f; font-size: 13px; }
+  .effect::before { content: "💡 "; }
+  .muted { color: var(--soft); font-size: 13px; }
+  .picks { margin-top: 8px; display: grid; gap: 6px; }
+  .pick { text-align: start; border: 1px solid var(--line); background: #fafbfc; border-radius: 8px; padding: 6px 10px; cursor: pointer; font: inherit; }
+  .pick:hover { border-color: var(--acc); }
+  .chosen { margin-top: 6px; font-size: 13px; }
+  .chosen.ok { color: #1a7f37; }
+  .chosen.no { color: #9a6700; }
+  .boxes { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .boxes label { font-size: 13px; display: inline-flex; gap: 5px; align-items: center; }
+  .site { margin-bottom: 8px; }
+  .site p.muted { margin: 2px 0 0; padding-inline-start: 26px; }
+  .hoods { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-top: 10px; }
+  .small { font-size: 12px; margin-top: 6px; }
+  .must-t { display: inline-flex; flex-direction: column; line-height: 1.25; }
+  .must-t b { font-weight: 600; }
+  .must-t small { font-size: 11.5px; color: var(--soft); font-weight: 400; }
+  .hoodlist { columns: 3 200px; column-gap: 18px; margin-top: 8px; max-height: 320px; overflow: auto; }
+  .hoodlist label { display: flex; gap: 6px; align-items: center; font-size: 13px; break-inside: avoid; padding: 2px 0; }
+  .save { position: fixed; left: 0; right: 0; bottom: 0; background: #fff; border-top: 1px solid var(--line); box-shadow: 0 -4px 16px rgba(16,24,40,.06); z-index: 5; }
+  .save .in { max-width: 920px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 12px; }
+  #msg { flex: 1; font-size: 13px; }
+  #msg.err { color: #b42318; }
+  #msg.ok { color: #1a7f37; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .err-box { color: #b42318; background: #fdecea; border: 1px solid #f3b8b1; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; }
+  bdi { unicode-bidi: isolate; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<header><div class="top"><img src="icons/icon48.png" alt=""><h1 data-i18n="su_title">Setup</h1>
+  <button class="btn" id="tour" data-i18n="su_quick">Quick setup</button>
+  <button class="btn" id="lang"></button>
+  <button class="btn" id="results" data-i18n="your_listings">Your listings</button></div></header>
+<main>
+  <div class="err-box" id="loaderr" hidden></div>
+
+  <section id="s-where">
+    <h2 data-i18n="su_where">Where to look</h2>
+    <p class="lead" data-i18n="su_where_lead"></p>
+    <div class="chips" id="searches"></div>
+    <div class="row">
+      <input class="wide" id="city" list="cities" data-i18n-ph="su_city_ph" autocomplete="off">
+      <datalist id="cities"></datalist>
+    </div>
+    <div class="hoods" id="hoodbox" hidden></div>
+    <div class="chosen" id="citymsg"></div>
+    <details style="margin-top:12px"><summary class="muted" data-i18n="su_link"></summary>
+      <div class="row" style="margin-top:8px">
+        <input class="wide" id="link" placeholder="https://www.yad2.co.il/realestate/rent/..." dir="ltr">
+        <input id="linklabel" data-i18n-ph="su_link_name">
+        <button class="btn" id="addlink" data-i18n="add"></button>
+      </div>
+    </details>
+  </section>
+
+  <section id="s-sites">
+    <h2 data-i18n="su_sites">Other sites</h2>
+    <p class="lead" data-i18n="su_sites_lead"></p>
+    <div class="site"><label class="c"><input type="checkbox" id="src-komo"><b data-i18n="site_komo">Komo</b></label>
+      <p class="muted" data-i18n="su_komo_x"></p></div>
+    <div class="site"><label class="c"><input type="checkbox" id="src-madlan"><b data-i18n="site_madlan">Madlan</b></label>
+      <p class="muted" data-i18n="su_madlan_x"></p></div>
+  </section>
+
+  <section id="s-show">
+    <h2 data-i18n="su_show">What to show</h2>
+    <div class="site"><label class="c"><input type="checkbox" id="nophotos"><b data-i18n="su_nophotos">Hide listings with no photos</b></label>
+      <p class="muted" data-i18n="su_nophotos_x"></p></div>
+  </section>
+
+  <section id="s-commute">
+    <h2 data-i18n="su_places">Places you go to</h2>
+    <p class="lead" data-i18n="su_places_lead"></p>
+    <div id="commutes"></div>
+    <button class="btn" id="addcommute" data-i18n="su_add_place"></button>
+  </section>
+
+  <section id="s-basics">
+    <h2 data-i18n="su_basics">Budget and the apartment</h2>
+    <p class="lead" data-i18n="su_basics_lead"></p>
+    <div id="basics"></div>
+  </section>
+
+  <section id="s-features">
+    <h2 data-i18n="su_features">Features</h2>
+    <p class="lead" data-i18n="su_features_lead"></p>
+    <div id="features"></div>
+    <div class="row"><select id="addpref"></select><button class="btn" id="addprefbtn" data-i18n="add"></button></div>
+  </section>
+</main>
+<div class="save" id="savebar"><div class="in"><span id="msg" class="muted"></span><button class="btn" id="revert" data-i18n="su_undo"></button></div></div>
+<script src="i18n.js"></script>
+<script src="sites.js"></script>
+<script src="setup_lib.js"></script>
+<script src="hoodmap.js"></script>
+<script src="options.js"></script>
+</body>
+</html>

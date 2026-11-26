@@ -1,0 +1,173 @@
+{
+  "about": "Labeled free-text cases the Phase 2 extractor is measured against. Each is a phrasing the Phase 0 regex parsers got wrong at some point, or a real card. `expected` is the correct value; null means the text does not settle it.",
+  "cases": [
+    {
+      "field": "listed_by",
+      "text": "לא מתווכחים על המחיר",
+      "expected": null,
+      "why": "'no haggling': מתווכחים is 'arguing', not a broker word",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "המחיר סופי, לא מתווכחים",
+      "expected": null,
+      "why": "same",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "מתווכחים על המחיר",
+      "expected": null,
+      "why": "same, without the negation",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "Broker: N/A",
+      "expected": "private",
+      "why": "features-list answer 'not applicable'",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "מתווכים יכולים לפנות",
+      "expected": null,
+      "why": "addresses brokers ('brokers may contact'); says nothing about the lister",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "Brokers welcome",
+      "expected": null,
+      "why": "same",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "תיווך?",
+      "expected": null,
+      "why": "a bare question",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "listed_by",
+      "text": "Travel agency downstairs",
+      "expected": null,
+      "why": "an unrelated agency",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ועד בית 200, אחת לחודשיים",
+      "expected": null,
+      "why": "every two months, not monthly",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ועד בית 1200, משולם פעם בשנה",
+      "expected": null,
+      "why": "paid once a year",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "vaad bayit 1200, paid annually",
+      "expected": null,
+      "why": "yearly",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "vaad bayit 600 - twice a year",
+      "expected": null,
+      "why": "twice a year",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ועד בית 100, כלול בשכירות",
+      "expected": null,
+      "why": "already included in the rent",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "vaad bayit 100, paid by landlord",
+      "expected": null,
+      "why": "not the tenant's cost",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "לשותף: ועד בית 100",
+      "expected": null,
+      "why": "one roommate's share",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "per roommate: vaad bayit 100",
+      "expected": null,
+      "why": "one roommate's share",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ועד בית 300, מתחלק בין 3 שותפים",
+      "expected": null,
+      "why": "split three ways",
+      "found_by": "review 11 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ללא ארנונה וועד בית 400",
+      "expected": null,
+      "why": "the negation covers both keywords",
+      "found_by": "review 10 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "לא כולל ועד בית 100 לחודש",
+      "expected": null,
+      "why": "'not including'",
+      "found_by": "review 9 (Oct 18)"
+    },
+    {
+      "field": "arnona_monthly",
+      "text": "לא כולל ארנונה 450 לחודש",
+      "expected": null,
+      "why": "'not including'",
+      "found_by": "review 9 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "ארנונה 800 לחודשיים, ועד בית 150",
+      "expected": 150.0,
+      "why": "the bi-monthly marker is arnona's, not vaad bayit's",
+      "found_by": "review 9 (Oct 18)"
+    },
+    {
+      "field": "vaad_bayit_monthly",
+      "text": "No parking, elevator yes, A/C yes, 6 photos, vaad bayit ₪70/mo",
+      "expected": 70.0,
+      "why": "real card ho-k678s664",
+      "found_by": "real data"
+    },
+    {
+      "field": "listed_by",
+      "text": "✅ Private mamad confirmed, public shelter 95m, no broker (private listing), 10 photos",
+      "expected": "private",
+      "why": "real card ho-8raxcjyc",
+      "found_by": "real data / review 2"
+    },
+    {
+      "field": "listed_by",
+      "text": "Agency listing (Yad Eliyahu Brokerage) — no fee mentioned on the page, confirm before signing",
+      "expected": "agency",
+      "why": "real card ye-x5zoqq0y",
+      "found_by": "real data"
+    }
+  ]
+}
